@@ -2,7 +2,7 @@
   description = "Blackmatter OpenCode - AI coding agent with Nord theme and blackmatter defaults";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
 
   outputs = { self, nixpkgs }:
