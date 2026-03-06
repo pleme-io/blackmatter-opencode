@@ -3,9 +3,13 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    devenv = {
+      url = "github:cachix/devenv";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, devenv }:
     let
       allSystems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs allSystems (system: f system);
@@ -21,6 +25,22 @@
 
       # Home-manager module for opencode configuration
       homeManagerModules.default = import ./module;
+
+      # ── Dev shells ────────────────────────────────────────────────
+      devShells = forAllSystems (system:
+        let pkgs = import nixpkgs { inherit system; };
+        in {
+          default = devenv.lib.mkShell {
+            inputs = { inherit nixpkgs devenv; };
+            inherit pkgs;
+            modules = [{
+              languages.nix.enable = true;
+              packages = with pkgs; [ nixpkgs-fmt nil ];
+              git-hooks.hooks.nixpkgs-fmt.enable = true;
+            }];
+          };
+        }
+      );
 
       # ── Checks ──────────────────────────────────────────────────
       checks = forAllSystems (system:
