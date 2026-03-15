@@ -8,6 +8,7 @@
 }:
 with lib; let
   cfg = config.blackmatter.components.opencode;
+  opencodeOpts = import ./opencode-options.nix { inherit lib; };
 
   # Import shared Nord palette
   colors = import ./themes/nord/colors.nix;
@@ -32,6 +33,47 @@ with lib; let
     nord15 = colors.aurora.purple;
   };
 
+  # Convert typed provider attrs to JSON-ready format (strip nulls)
+  providerJson = mapAttrs (_name: prov:
+    filterAttrs (_: v: v != null) {
+      inherit (prov) apiKey apiKeyEnv baseUrl;
+    } // optionalAttrs prov.disabled { disabled = true; }
+  ) cfg.provider;
+
+  # Convert typed MCP attrs to JSON-ready format
+  mcpJson = mapAttrs (_name: srv:
+    { inherit (srv) type command; }
+    // optionalAttrs (srv.args != []) { inherit (srv) args; }
+    // optionalAttrs (srv.env != {}) { inherit (srv) env; }
+    // optionalAttrs (!srv.enabled) { enabled = false; }
+  ) cfg.mcp;
+
+  # Convert typed tools attrs to JSON-ready format
+  toolsJson = mapAttrs (_name: tool:
+    { inherit (tool) enabled; }
+  ) cfg.tools;
+
+  # Convert typed permission to JSON-ready format
+  permissionJson =
+    optionalAttrs (cfg.permission.default != "ask") {
+      default = cfg.permission.default;
+    }
+    // optionalAttrs (cfg.permission.tools != {}) {
+      tools = cfg.permission.tools;
+    };
+
+  # Convert typed TUI to JSON-ready format
+  tuiJson =
+    optionalAttrs (cfg.tui.showToolCalls != true) {
+      show_tool_calls = cfg.tui.showToolCalls;
+    }
+    // optionalAttrs cfg.tui.showTokenUsage {
+      show_token_usage = true;
+    }
+    // optionalAttrs (cfg.tui.theme != null) {
+      theme = cfg.tui.theme;
+    };
+
   # Build the opencode.json config
   opencodeConfig = {
     "$schema" = "https://opencode.ai/config.json";
@@ -41,22 +83,22 @@ with lib; let
     model = cfg.model;
   } // optionalAttrs (cfg.smallModel != null) {
     small_model = cfg.smallModel;
-  } // optionalAttrs (cfg.provider != {}) {
-    provider = cfg.provider;
+  } // optionalAttrs (providerJson != {}) {
+    provider = providerJson;
   } // optionalAttrs (cfg.disabledProviders != []) {
     disabled_providers = cfg.disabledProviders;
   } // optionalAttrs (cfg.enabledProviders != []) {
     enabled_providers = cfg.enabledProviders;
   } // optionalAttrs (cfg.keybinds != {}) {
     keybinds = cfg.keybinds;
-  } // optionalAttrs (cfg.mcp != {}) {
-    mcp = cfg.mcp;
-  } // optionalAttrs (cfg.tools != {}) {
-    tools = cfg.tools;
-  } // optionalAttrs (cfg.permission != {}) {
-    permission = cfg.permission;
-  } // optionalAttrs (cfg.tui != {}) {
-    tui = cfg.tui;
+  } // optionalAttrs (mcpJson != {}) {
+    mcp = mcpJson;
+  } // optionalAttrs (toolsJson != {}) {
+    tools = toolsJson;
+  } // optionalAttrs (permissionJson != {}) {
+    permission = permissionJson;
+  } // optionalAttrs (tuiJson != {}) {
+    tui = tuiJson;
   } // optionalAttrs (cfg.instructions != []) {
     instructions = cfg.instructions;
   } // cfg.extraConfig;
@@ -94,11 +136,7 @@ in {
       example = "anthropic/claude-haiku-4-5";
     };
 
-    provider = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "Provider configuration overrides";
-    };
+    inherit (opencodeOpts) provider mcp tools keybinds;
 
     disabledProviders = mkOption {
       type = types.listOf types.str;
@@ -112,39 +150,9 @@ in {
       description = "Providers to enable (empty = all enabled)";
     };
 
-    keybinds = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "Keybinding overrides";
-      example = {
-        leader = "ctrl+x";
-        app_exit = "ctrl+c,ctrl+d,<leader>q";
-      };
-    };
+    permission = opencodeOpts.permission;
 
-    mcp = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "MCP server configuration";
-    };
-
-    tools = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "Tool enable/disable overrides";
-    };
-
-    permission = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "Permission settings for tools";
-    };
-
-    tui = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "TUI display settings";
-    };
+    tui = opencodeOpts.tui;
 
     instructions = mkOption {
       type = types.listOf types.str;
