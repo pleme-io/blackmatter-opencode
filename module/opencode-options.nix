@@ -8,6 +8,7 @@ with lib;
   # ── provider.* ─────────────────────────────────────────────────
   provider = mkOption {
     type = types.attrsOf (types.submodule {
+      freeformType = types.attrs;
       options = {
         apiKey = mkOption {
           type = types.nullOr types.str;
@@ -32,7 +33,7 @@ with lib;
       };
     });
     default = {};
-    description = "Provider configuration overrides.";
+    description = "Provider configuration overrides. Accepts additional provider-specific fields (npm, name, options, models).";
   };
 
   # ── mcp.* ──────────────────────────────────────────────────────

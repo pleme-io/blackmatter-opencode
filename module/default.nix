@@ -33,11 +33,14 @@ with lib; let
     nord15 = colors.aurora.purple;
   };
 
-  # Convert typed provider attrs to JSON-ready format (strip nulls)
+  # Convert typed provider attrs to JSON-ready format (strip nulls, pass through extras)
   providerJson = mapAttrs (_name: prov:
-    filterAttrs (_: v: v != null) {
-      inherit (prov) apiKey apiKeyEnv baseUrl;
-    } // optionalAttrs prov.disabled { disabled = true; }
+    let
+      typed = filterAttrs (_: v: v != null) {
+        inherit (prov) apiKey apiKeyEnv baseUrl;
+      } // optionalAttrs prov.disabled { disabled = true; };
+      extra = removeAttrs prov [ "apiKey" "apiKeyEnv" "baseUrl" "disabled" "_module" ];
+    in typed // extra
   ) cfg.provider;
 
   # Convert typed MCP attrs to JSON-ready format
