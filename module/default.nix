@@ -43,13 +43,22 @@ with lib; let
     in typed // extra
   ) cfg.provider;
 
+  # Merge anvil servers with typed MCP attrs
+  # Anvil servers are { type, command, args } — convert to opencode format
+  anvilMcpServers = if (config ? blackmatter.components.anvil.generatedServers)
+    then config.blackmatter.components.anvil.generatedServers
+    else {};
+
   # Convert typed MCP attrs to JSON-ready format
-  mcpJson = mapAttrs (_name: srv:
+  typedMcpJson = mapAttrs (_name: srv:
     { inherit (srv) type command; }
     // optionalAttrs (srv.args != []) { inherit (srv) args; }
     // optionalAttrs (srv.env != {}) { inherit (srv) env; }
     // optionalAttrs (!srv.enabled) { enabled = false; }
   ) cfg.mcp;
+
+  # Anvil servers merged under typed (typed wins on conflict)
+  mcpJson = anvilMcpServers // typedMcpJson;
 
   # Convert typed tools attrs to JSON-ready format
   toolsJson = mapAttrs (_name: tool:
