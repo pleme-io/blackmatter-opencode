@@ -1,0 +1,22 @@
+schema_version: 1
+manifest:
+  name: blackmatter-opencode
+  kind: BlackmatterComponent
+  archetype: blackmatter-component-hm-package
+  description: AI coding agent (opencode) with Nord theme and blackmatter defaults.
+dimensions:
+  vocabulary: [opencode, ai-agent, nord, theme]
+  domains: [Nix, JSON]
+  stack: [HomeManager]
+  modules:
+    home_manager: module/
+  render:
+    produces:
+      - "~/.config/opencode/opencode.json"
+      - "~/.config/opencode/themes/blackmatter.json"
+  compliance:
+    satisfies: []
+    participates: [ai-agent-governance]
+  dag:
+    inputs: [nixpkgs, substrate]
+  attestation: { merkle_root: null, signed_by: null, producer: blackmatter-component-flake.nix }
