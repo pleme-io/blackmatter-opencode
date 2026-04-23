@@ -67,7 +67,34 @@ with lib;
       };
     });
     default = {};
-    description = "MCP server definitions.";
+    description = "MCP server definitions. Anvil servers are merged automatically when anvil is enabled.";
+  };
+
+  # ── skills.* ───────────────────────────────────────────────────
+  skills = {
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Deploy skills to opencode skills directory and configure skills.paths.";
+    };
+
+    extraSkills = mkOption {
+      type = types.attrsOf types.path;
+      default = {};
+      description = "Additional skill files. Keys are skill names, values are SKILL.md paths.";
+    };
+
+    paths = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      description = "Additional skill folder paths for opencode to discover.";
+    };
+
+    urls = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      description = "URLs to fetch skills from.";
+    };
   };
 
   # ── tools.* ────────────────────────────────────────────────────
@@ -97,6 +124,67 @@ with lib;
       default = {};
       description = "Per-tool permission overrides.";
     };
+  };
+
+  # ── mode/agent.* ───────────────────────────────────────────────
+  mode = mkOption {
+    type = types.attrsOf (types.submodule {
+      freeformType = types.attrs;
+      options = {
+        model = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Model override for this agent (provider/model format).";
+        };
+        variant = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Default model variant for this agent.";
+        };
+        temperature = mkOption {
+          type = types.nullOr types.number;
+          default = null;
+          description = "Sampling temperature.";
+        };
+        top_p = mkOption {
+          type = types.nullOr types.number;
+          default = null;
+          description = "Top-p sampling parameter.";
+        };
+        prompt = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "System prompt override for this agent.";
+        };
+        disable = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Disable this agent.";
+        };
+        description = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Description of when to use this agent.";
+        };
+        mode = mkOption {
+          type = types.nullOr (types.enum [ "subagent" "primary" "all" ]);
+          default = null;
+          description = "Agent mode: subagent, primary, or all.";
+        };
+        hidden = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Hide from @ autocomplete (subagent only).";
+        };
+        steps = mkOption {
+          type = types.nullOr types.int;
+          default = null;
+          description = "Maximum agentic iterations before forcing text-only.";
+        };
+      };
+    });
+    default = {};
+    description = "Agent/mode configuration (build, plan, custom agents).";
   };
 
   # ── tui.* ──────────────────────────────────────────────────────
