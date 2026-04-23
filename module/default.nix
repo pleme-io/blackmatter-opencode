@@ -82,12 +82,19 @@ with lib; let
     enabled = srv.enabled or true;
   }) cfg.mcp);
 
-  # Convert merged MCP attrs to JSON-ready format
-  mcpJson = mapAttrs (_name: srv:
+  # Convert merged MCP attrs to JSON-ready format.
+  # Access optional fields with `or` defaults because anvil-sourced servers
+  # (from substrate's mkResolvedServers) only carry {type, command, args}
+  # — env/enabled are absent there.
+  mcpJson = mapAttrs (_name: srv: let
+    sArgs = srv.args or [];
+    sEnv = srv.env or {};
+    sEnabled = srv.enabled or true;
+  in
     { inherit (srv) type command; }
-    // optionalAttrs (srv.args != []) { inherit (srv) args; }
-    // optionalAttrs (srv.env != {}) { inherit (srv) env; }
-    // optionalAttrs (!(srv.enabled or true)) { enabled = false; }
+    // optionalAttrs (sArgs != []) { args = sArgs; }
+    // optionalAttrs (sEnv != {}) { env = sEnv; }
+    // optionalAttrs (!sEnabled) { enabled = false; }
   ) mcpSources;
 
   # ── Skills deployment ──────────────────────────────────────────
